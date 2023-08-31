@@ -1,11 +1,41 @@
+#define HASHTABLE_IMPLEMENTATION
 #include "cpu.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+
+#define ABS_SP(SP) ((0x0100) + (SP))
+#define HEX_CHARS "0123456789ABCDEF"
+
+// 6502 Stack starts at 0x0100 and the SP is the offset from the start.
+// The stack grows down and the SP points to the next free space.
+/*
+              ....
+           +--------+
+↓  0x1FF0  |  0x00  |  Last (First) Stack Adrress
+↓          +--------+
+↓  0x1FE0  |  0x01  |
+↓          +--------+
+↓  0x1FD0  |  0x02  |
+↓          +--------+
+↓  0x1FC0  |  0x03  |
+↓          +--------+
+↓  0x1FB0  |        |  <-- SP
+↓          +--------+
+↓          |  ....  |
+↓          +--------+
+↓  0x0100  |        |  Base Stack Address
+           +--------+
+
+*/ 
 
 static Cpu6502 cpu = {0};
 
 typedef struct {
     char name[4];
-    u8 (*addrmode)(void);
     u8 (*operate)(void);
+    u8 (*addrmode)(void);
     u8 cycles;
 } CpuInstruction;
 
@@ -35,7 +65,7 @@ void CpuInit() {
     cpu.Y = 0x00;
     cpu.PC = 0x0000;
     cpu.SP = 0x00;
-    cpu.status = 0b00000000;   // CPU Status set all flags to 0
+    cpu.status = 0;   // CPU Status set all flags to 0
 
     cpu.fetched = 0x00;
     cpu.addr_abs = 0x0000;
@@ -91,6 +121,209 @@ u8 CpuFetch() {
     return cpu.fetched;
 }
 
+void CpuReset() {
+	cpu.addr_abs = 0xFFFC;
+	uint16_t lo = CpuRead(cpu.addr_abs + 0);
+	uint16_t hi = CpuRead(cpu.addr_abs + 1);
+
+	cpu.PC = (hi << 8) | lo;
+
+	cpu.A = 0x00;
+	cpu.X = 0x00;
+	cpu.Y = 0x00;
+	cpu.SP = 0xFD;
+	cpu.status = 0x00 | U;
+
+	cpu.addr_rel = 0x0000;
+	cpu.addr_abs = 0x0000;
+	cpu.fetched = 0x00;
+
+	cpu.cycles = 8;
+}
+
+void CpuIrq() {
+	if (CpuGetFlag(I) == 0){
+		CpuWrite(ABS_SP(cpu.SP--), (cpu.PC >> 8) & 0x00FF);
+		CpuWrite(ABS_SP(cpu.SP--), cpu.PC & 0x00FF);
+
+		CpuSetFlag(B, 0);
+		CpuSetFlag(U, 1);
+		CpuSetFlag(I, 1);
+		CpuWrite(ABS_SP(cpu.SP--), cpu.status);
+
+		cpu.addr_abs = 0xFFFE;
+		uint16_t lo = CpuRead(cpu.addr_abs + 0);
+		uint16_t hi = CpuRead(cpu.addr_abs + 1);
+		cpu.PC = (hi << 8) | lo;
+
+		cpu.cycles = 7;
+	}
+}
+void CpuNmi() {
+    CpuWrite(ABS_SP(cpu.SP--), (cpu.PC >> 8) & 0x00FF);
+	CpuWrite(ABS_SP(cpu.SP--), cpu.PC & 0x00FF);
+
+	CpuSetFlag(B, 0);
+	CpuSetFlag(U, 1);
+	CpuSetFlag(I, 1);
+	CpuWrite(ABS_SP(cpu.SP--), cpu.status);
+
+	cpu.addr_abs = 0xFFFA;
+	uint16_t lo = CpuRead(cpu.addr_abs + 0);
+	uint16_t hi = CpuRead(cpu.addr_abs + 1);
+	cpu.PC = (hi << 8) | lo;
+
+	cpu.cycles = 8;
+}
+
+bool CpuComplete() {
+    return cpu.cycles == 0;
+}
+
+static char* hex(u32 n, u8 d, char *dst) {
+    strset(dst, 0);
+    int i;
+    dst[d] = 0;
+    for (i = d - 1; i >= 0; i--, n >>= 4) {
+        dst[i] = HEX_CHARS[n & 0xF];
+    }
+    return dst;
+}
+
+void CpuDisassemble(u16 nStart, u16 nStop, char *mapLines[0xFFFF]) {
+    u32 addr = nStart;
+	u8 value = 0x00, lo = 0x00, hi = 0x00;
+	u16 line_addr;
+    char *sInst = (char*)calloc(1024, 1);
+    char hex_aux[16];
+
+	while (addr <= (u32)nStop) {
+        strset(sInst, 0);
+		line_addr = addr;
+
+		// Prefix line with instruction address
+        
+        strcat(sInst, "$");
+        strcat(sInst, hex(addr, 4, hex_aux));
+        strcat(sInst, ": ");
+
+		// Read instruction, and get its readable name
+		u8 opcode = CpuRead(addr); 
+        addr++;
+		strcat(sInst, LOOKUP[opcode].name);
+        strcat(sInst, " ");
+
+		// Get oprands from desired locations, and form the
+		// instruction based upon its addressing mode. These
+		// routines mimmick the actual fetch routine of the
+		// 6502 in order to get accurate data as part of the
+		// instruction
+
+		if (LOOKUP[opcode].addrmode == IMP)
+		{
+            strcat(sInst, " {IMP}");
+		}
+		else if (LOOKUP[opcode].addrmode == IMM)
+		{
+			value = CpuRead(addr); addr++;
+            strcat(sInst, "#$");
+            strcat(sInst, hex(value, 2, hex_aux));
+            strcat(sInst, " {IMM}");
+		}
+		else if (LOOKUP[opcode].addrmode == ZP0)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = 0x00;
+            strcat(sInst, "$");
+            strcat(sInst, hex(lo, 2, hex_aux));
+            strcat(sInst, " {ZP0}");
+		}
+		else if (LOOKUP[opcode].addrmode == ZPX)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = 0x00;
+            strcat(sInst, "$");
+            strcat(sInst, hex(lo, 2, hex_aux));
+            strcat(sInst, ", X {ZPX}");
+		}
+		else if (LOOKUP[opcode].addrmode == ZPY)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = 0x00;
+            strcat(sInst, "$");
+            strcat(sInst, hex(lo, 2, hex_aux));
+            strcat(sInst, ", Y {ZPY}");
+		}
+		else if (LOOKUP[opcode].addrmode == IZX)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = 0x00;
+            strcat(sInst, "($");
+            strcat(sInst, hex(lo, 2, hex_aux));
+            strcat(sInst, ", X) {IZX}");					
+		}
+		else if (LOOKUP[opcode].addrmode == IZY)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = 0x00;
+            strcat(sInst, "($");
+            strcat(sInst, hex(lo, 2, hex_aux));
+            strcat(sInst, "), Y {IZY}");	
+		}
+		else if (LOOKUP[opcode].addrmode == ABS)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = CpuRead(addr); addr++;
+            strcat(sInst, "$");
+            strcat(sInst, hex((u16)(hi << 8) | lo, 4, hex_aux));
+            strcat(sInst, " {ABS}");
+		}
+		else if (LOOKUP[opcode].addrmode == ABX)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = CpuRead(addr); addr++;
+            strcat(sInst, "$");
+            strcat(sInst, hex((u16)(hi << 8) | lo, 4, hex_aux));
+            strcat(sInst, ", X {ABX}");
+		}
+		else if (LOOKUP[opcode].addrmode == ABY)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = CpuRead(addr); addr++;
+            strcat(sInst, "$");
+            strcat(sInst, hex((u16)(hi << 8) | lo, 4, hex_aux));
+            strcat(sInst, ", Y {ABY}");
+		}
+		else if (LOOKUP[opcode].addrmode == IND)
+		{
+			lo = CpuRead(addr); addr++;
+			hi = CpuRead(addr); addr++;
+            strcat(sInst, "($");
+            strcat(sInst, hex((u16)(hi << 8) | lo, 4, hex_aux));
+            strcat(sInst, ") {IND}");
+		}
+		else if (LOOKUP[opcode].addrmode == REL)
+		{
+			value = CpuRead(addr); addr++;
+            strcat(sInst, "$");
+            strcat(sInst, hex(value, 2, hex_aux));
+            strcat(sInst, " [$");
+            strcat(sInst, hex(addr + (i8)value, 4, hex_aux));
+            strcat(sInst, "] {REL}");
+		}
+
+		// Add the formed string to a std::map, using the instruction's
+		// address as the key. This makes it convenient to look for later
+		// as the instructions are variable in length, so a straight up
+		// incremental index is not sufficient.
+		mapLines[line_addr] = strdup(sInst);
+    }
+}
+
+Cpu6502 *CpuGet() {
+    return &cpu;
+}
+
 //----------------------------------------------------------------------------------
 // Addressing modes
 //----------------------------------------------------------------------------------
@@ -103,7 +336,7 @@ u8 ZPX() {
 }
 
 u8 ZPY() {
-    cpu.addr_abs = read(cpu.PC++) + cpu.Y;
+    cpu.addr_abs = CpuRead(cpu.PC++) + cpu.Y;
 	cpu.addr_abs &= 0x00FF;
     return 0;
 }
@@ -218,17 +451,41 @@ u8 IND() {
 // Op codes
 //----------------------------------------------------------------------------------
 
-u8 ADC();
-
-u8 AND() {
-    u8 operand = CpuFetch();    // cpu.fetched is populated also, but for clarity we might use the variable
-    cpu.A &= operand;
-    CpuSetFlag(Z, operand == 0x00);
-    CpuSetFlag(N, operand & 0x80);
+// A += M + C
+u8 ADC() {
+    CpuFetch();
+    cpu.temp = (u16)cpu.A + (u16)cpu.fetched + (u16)CpuGetFlag(C);
+    CpuSetFlag(C, cpu.temp > 255);
+    CpuSetFlag(Z, cpu.temp & 0x00FF);
+    CpuSetFlag(V, (~((u16)cpu.A ^ (u16)cpu.fetched) & ((u16)cpu.A ^ (u16)cpu.temp)) & 0x0080);
+    CpuSetFlag(N, cpu.temp & 0x80);
+    
+    cpu.A = (u8)(cpu.temp & 0x00FF);
     return 1;
 }
 
-u8 ASL();
+u8 AND() {
+    CpuFetch();
+    cpu.A &= cpu.fetched;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 1;
+}
+
+// Arithmetic Shift Left
+// A = C <- (A << 1) <- 0
+u8 ASL() {
+    CpuFetch();
+	cpu.temp = (uint16_t)cpu.fetched << 1;
+	CpuSetFlag(C, (cpu.temp & 0xFF00) > 0);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x00);
+	CpuSetFlag(N, cpu.temp & 0x80);
+	if (LOOKUP[cpu.opcode].addrmode == IMP)
+		cpu.A = cpu.temp & 0x00FF;
+	else
+		CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+	return 0;
+}
 
 u8 BCC() {
     if (CpuGetFlag(C) == 0) {
@@ -265,7 +522,15 @@ u8 BEQ() {
     }
     return 0;
 }
-u8 BIT();
+
+u8 BIT() {
+    CpuFetch();
+    cpu.temp = cpu.A & cpu.fetched;
+    CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0);
+    CpuSetFlag(N, (cpu.fetched & N));
+    CpuSetFlag(V, (cpu.fetched & V));
+    return 0;
+}
 
 u8 BMI() {
     if (CpuGetFlag(N) == 1) {
@@ -303,7 +568,19 @@ u8 BPL() {
     return 0;
 }
 
-u8 BRK();
+u8 BRK() {
+    cpu.PC++;
+    CpuSetFlag(I, true);
+    CpuWrite(ABS_SP(cpu.SP--), (cpu.PC >> 8) & 0x00FF);
+    CpuWrite(ABS_SP(cpu.SP--), cpu.PC & 0x00FF);
+    
+    CpuSetFlag(B, true);
+    CpuWrite(cpu.SP--, cpu.status);
+    CpuSetFlag(B, false);
+    
+    cpu.PC = (u16)CpuRead(0xFFFE) | ((u16)CpuRead(0xFFFF)) << 8;
+    return 0;
+}
 
 u8 BVC() {
     if (CpuGetFlag(V) == 0) {
@@ -349,46 +626,320 @@ u8 CLV() {
     return 0;
 }
 
-u8 CMP();
-u8 CPX();
-u8 CPY();
+u8 CMP() {
+    CpuFetch();
+    cpu.temp = (u16)cpu.A - (u16)cpu.fetched;
+	CpuSetFlag(C, cpu.A >= cpu.fetched);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+    return 0;
+}
 
-u8 DEC();
-u8 DEX();
-u8 DEY();
-u8 EOR();
-u8 INC();
-u8 INX();
-u8 INY();
-u8 JMP();
-u8 JSR();
-u8 LDA();
-u8 LDX();
-u8 LDY();
-u8 LSR();
-u8 NOP();
-u8 ORA();
-u8 PHA();
-u8 PHP();
-u8 PLA();
-u8 PLP();
+u8 CPX() {
+    CpuFetch();
+    cpu.temp = (u16)cpu.X - (u16)cpu.fetched;
+	CpuSetFlag(C, cpu.X >= cpu.fetched);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+    return 0;
+}
 
-u8 ROL();
-u8 ROR();
-u8 RTI();
-u8 RTS();
-u8 SBC();
-u8 SEC();
-u8 SED();
-u8 SEI();
-u8 STA();
-u8 STX();
-u8 STY();
-u8 TAX();
-u8 TAY();
-u8 TSX();
-u8 TXA();
-u8 TXS();
-u8 TYA();
+u8 CPY() {
+    CpuFetch();
+    cpu.temp = (u16)cpu.Y - (u16)cpu.fetched;
+	CpuSetFlag(C, cpu.Y >= cpu.fetched);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+    return 0;
+}
 
-u8 XXX();
+u8 DEC() {
+    CpuFetch();
+    cpu.temp = cpu.fetched - 1;
+    CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 0;
+}
+
+u8 DEX() {
+    cpu.X--;
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 0;
+}
+
+u8 DEY() {
+    cpu.Y--;
+    CpuSetFlag(Z, cpu.Y == 0x00);
+    CpuSetFlag(N, cpu.Y & 0x80);
+    return 0;
+}
+u8 EOR() {
+    CpuFetch();
+    cpu.A ^= cpu.fetched;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 1;
+}
+
+u8 INC() {
+    CpuFetch();
+    cpu.temp = cpu.fetched + 1;
+    CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+    CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+    CpuSetFlag(N, cpu.temp & 0x0080);
+    return 0;    
+}
+
+u8 INX() {
+    cpu.X++;
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 0;    
+}
+
+u8 INY() {
+    cpu.Y++;
+    CpuSetFlag(Z, cpu.Y == 0x00);
+    CpuSetFlag(N, cpu.Y & 0x80);
+    return 0; 
+}
+
+u8 JMP() {
+    cpu.PC = cpu.addr_abs;
+    return 0;
+}
+
+// PC -> Mem(SP); PC = addr
+u8 JSR() {
+    --cpu.PC;
+    CpuWrite(ABS_SP(cpu.SP--), (cpu.PC >> 8) & 0x00FF);     // Save the PC high byte
+    CpuWrite(ABS_SP(cpu.SP--), cpu.PC & 0x00FF);            // Save the PC low  byte
+    
+    cpu.PC = cpu.addr_abs;
+    return 0;
+}
+
+u8 LDA() {
+    CpuFetch();
+    cpu.A = cpu.fetched;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 1;
+}
+
+u8 LDX() {
+    CpuFetch();
+    cpu.X = cpu.fetched;
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 1;
+}
+
+u8 LDY() {
+    CpuFetch();
+    cpu.Y = cpu.fetched;
+    CpuSetFlag(Z, cpu.Y == 0x00);
+    CpuSetFlag(N, cpu.Y & 0x80);
+    return 1;
+}
+
+u8 LSR() {
+	CpuFetch();
+	CpuSetFlag(C, cpu.fetched & 0x0001);
+	cpu.temp = cpu.fetched >> 1;	
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+	if (LOOKUP[cpu.opcode].addrmode == IMP)
+		cpu.A = cpu.temp & 0x00FF;
+	else
+		CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+	return 0;
+}
+
+// Not all NOPs are equal. Some of them will be implemented
+// based on https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
+u8 NOP() {
+	switch (cpu.opcode) {
+        case 0x1C:
+        case 0x3C:
+        case 0x5C:
+        case 0x7C:
+        case 0xDC:
+        case 0xFC:
+            return 1;
+        default:
+            break;
+    }
+	return 0;
+}
+
+u8 ORA() {
+    CpuFetch();
+    cpu.A |= cpu.fetched;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 0;
+}
+
+// Push Accumulator to the Stack
+
+u8 PHA() {
+    CpuWrite(ABS_SP(cpu.SP--), cpu.A);    
+    return 0;
+}
+
+u8 PHP() {
+    CpuWrite(ABS_SP(cpu.SP--), cpu.status | B | U);
+    CpuSetFlag(C, false);
+    CpuSetFlag(C, true);
+    
+    return 0;
+}
+
+// Pop to Accumulator
+u8 PLA() {
+    cpu.A = CpuRead(ABS_SP(++cpu.SP));
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 0;
+}
+
+u8 PLP() {
+    cpu.status = CpuRead(ABS_SP(++cpu.SP));
+    CpuSetFlag(U, true);
+    return 0; 
+}
+
+u8 ROL() {
+    CpuFetch();
+	cpu.temp = (uint16_t)(cpu.fetched << C) | CpuGetFlag(C);
+	CpuSetFlag(C, cpu.temp & 0xFF00);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+    // This op has different Address mode
+	if (LOOKUP[cpu.opcode].addrmode == IMP)
+		cpu.A = cpu.temp & 0x00FF;
+	else
+		CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+	return 0;
+}
+
+u8 ROR() {
+    CpuFetch();
+	cpu.temp = (uint16_t)(CpuGetFlag(C) << 7) | (cpu.fetched >> C);
+	CpuSetFlag(C, cpu.temp & 0x01);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(N, cpu.temp & 0x0080);
+    // This op has different Address mode
+	if (LOOKUP[cpu.opcode].addrmode == IMP)
+		cpu.A = cpu.temp & 0x00FF;
+	else
+		CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
+	return 0;
+}
+
+u8 RTI() {
+    u16 pc_lo = CpuRead(ABS_SP(++cpu.SP));
+    u16 pc_hi = CpuRead(ABS_SP(++cpu.SP));
+    cpu.PC = (pc_hi << 8) | pc_lo;
+    cpu.PC++;
+    return 0;
+}
+
+u8 RTS() {
+    cpu.status = CpuRead(ABS_SP(++cpu.SP));
+    CpuSetFlag(B, ~CpuGetFlag(B));
+    CpuSetFlag(U, ~CpuGetFlag(U));
+    u16 pc_lo = CpuRead(ABS_SP(++cpu.SP));
+    u16 pc_hi = CpuRead(ABS_SP(++cpu.SP));
+    cpu.PC = (pc_hi << 8) | pc_lo;
+    return 0;
+}
+
+u8 SBC() {
+    CpuFetch();
+    u16 inverted = (u16)(cpu.fetched ^ 0x00FF); 
+    u16 result = (u16)cpu.A + inverted + (u16)CpuGetFlag(C);
+    CpuSetFlag(C, result > 255);
+    CpuSetFlag(Z, result & 0x00FF);
+    CpuSetFlag(N, result & 0x80);
+    CpuSetFlag(V, (((u16)cpu.A ^ (u16)result) & ~((u16)cpu.A ^ (u16)cpu.fetched)) & 0x0080);
+    cpu.A += (u8)(result & 0x00FF);
+    return 1;
+}
+
+u8 SEC() {
+    CpuSetFlag(C, true);
+    return 0;
+}
+
+u8 SED() {
+    CpuSetFlag(D, true);
+    return 0;
+}
+
+u8 SEI() {
+    CpuSetFlag(I, true);
+    return 0;
+}
+
+u8 STA() {
+    CpuWrite(cpu.addr_abs, cpu.A);
+    return 0;
+}
+
+u8 STX() {
+    CpuWrite(cpu.addr_abs, cpu.X);
+    return 0;
+}
+
+u8 STY() {
+    CpuWrite(cpu.addr_abs, cpu.Y);
+    return 0;
+}
+
+u8 TAX() {
+    cpu.X = cpu.A;
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 0;
+}
+
+u8 TAY() {
+    cpu.Y = cpu.A;
+    CpuSetFlag(Z, cpu.Y == 0x00);
+    CpuSetFlag(N, cpu.Y & 0x80);
+    return 0;
+}
+
+u8 TSX() {
+    cpu.X = cpu.SP;
+    CpuSetFlag(Z, cpu.X == 0x00);
+    CpuSetFlag(N, cpu.X & 0x80);
+    return 0;
+}
+
+u8 TXA() {
+    cpu.A = cpu.X;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 0;
+}
+
+u8 TXS() {
+    cpu.SP = cpu.X;
+    return 0;   
+}
+
+u8 TYA() {
+    cpu.A = cpu.Y;
+    CpuSetFlag(Z, cpu.A == 0x00);
+    CpuSetFlag(N, cpu.A & 0x80);
+    return 0;
+}
+
+u8 XXX() {
+    return 0;
+}

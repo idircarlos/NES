@@ -2,10 +2,10 @@
 #define MEMORY_H
 
 #include "types.h"
-#define RAM_CAPAPCITY 64*1024   // [0x0000, 0xFFFF]
+#define RAM_CAPAPCITY 2048
 
 typedef struct {
-    u8 RAM [RAM_CAPAPCITY];
+    u8 RAM[RAM_CAPAPCITY];
 } Memory;
 
 void MemoryInit(Memory *memory);

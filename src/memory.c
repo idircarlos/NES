@@ -7,9 +7,9 @@ void MemoryInit(Memory *memory) {
 }
 
 u8 MemoryRead(Memory *memory, u16 addr) {
-    return memory->RAM[addr];
+    return memory->RAM[addr & 0x07FF];  // RAM Mirroring. 8Kb addresable range is morrered into the first 2Kb of RAM
 }
 
 void MemoryWrite(Memory *memory, u16 addr, u8 data) {
-    memory->RAM[addr] = data;
+    memory->RAM[addr & 0x07FF] = data;
 }

@@ -13,6 +13,7 @@ typedef struct {
     u8 SP;
     u8 status;
     u8 fetched;
+    u16 temp;
     u16 addr_abs;
     u16 addr_rel;
     u8 opcode;
@@ -40,6 +41,9 @@ u8 CpuFetch();
 void CpuReset();
 void CpuIrq();  // Interrupt request signal
 void CpuNmi();  // Non maskable interrupt signal
+bool CpuComplete();
+void CpuDisassemble(u16 nStart, u16 nStop, char* linesAsm [0xFFFF]);
+Cpu6502 *CpuGet();
 
 //----------------------------------------------------------------------------------
 // Addressing modes
