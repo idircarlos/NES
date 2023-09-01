@@ -43,4 +43,10 @@ void NesReset(Bus *bus) {
     systemClocks = 0;
 }
 
-void NesClock(Bus *bus);
+void NesClock(Bus *bus) {
+    PpuClock();
+    if (systemClocks % 3 == 0) {
+		CpuClock();
+	}
+    systemClocks++;
+}

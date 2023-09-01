@@ -10,6 +10,9 @@
 
 static char* mapAsm[0xFFFF] = {0};
 static Cpu6502 *cpu = {0};
+static Ppu2C02 *ppu = {0};
+static bool emulationRun = false;
+static float residualTime = 0.0f;
 
 static char* hex(u32 n, u8 d, char *dst) {
     strset(dst, 0);
@@ -124,8 +127,35 @@ void DrawCode(int x, int y, int nLines) {
     }
 }
 
+void DrawSprite(Sprite *sprite, u16 x, u16 y, u32 scale) {
+    if (sprite == NULL) return;
+
+    i32 fxs = 0, fxm = 1, fx = 0;
+    i32 fys = 0, fym = 1, fy = 0;
+
+    if (scale > 1) {
+        fx = fxs;
+        for (i32 i = 0; i < sprite->width; i++, fx += fxm) {
+            fy = fys;
+            for (i32 j = 0; j < sprite->height; j++, fy += fym)
+                for (i32 is = 0; is < scale; is++)
+                    for (i32 js = 0; js < scale; js++)
+                        DrawPixel(x + (i * scale) + is, y + (j * scale) + js, SpriteGetPixel(sprite, fx, fy));
+        }
+    }
+    else {
+        fx = fxs;
+        for (i32 i = 0; i < sprite->width; i++, fx += fxm) {
+            fy = fys;
+            for (i32 j = 0; j < sprite->height; j++, fy += fym)
+                DrawPixel(x + i, y + j, SpriteGetPixel(sprite, fx, fy));
+        }
+    }
+}
+
 void SetupDemo() {
     cpu = CpuGet();
+    ppu = PpuGet();
     Cartridge *cartridge = CartridgeCreate("./nestest.nes");
     NesInsertCartridge(cpu->bus, cartridge);
     // Extract dissassembly
@@ -134,36 +164,55 @@ void SetupDemo() {
     NesReset(cpu->bus);
 }
 
-void GetInput() {
-    if (IsKeyPressed(KEY_SPACE)) {
-        do {
-            CpuClock();
-        } 
-        while (!CpuComplete());
+void UpdateDemo() {
+    float elapsedTime = GetFrameTime();
+    if (emulationRun) {
+        if (residualTime > 0.0f)
+            residualTime -= elapsedTime;
+        else {
+            residualTime += (1.0f / 60.0f) - elapsedTime;
+            do { NesClock(cpu->bus); } while (!ppu->frameCompleted);
+            ppu->frameCompleted = false;
+        }
+	}
+    else {
+        // Emulate code step-by-step
+        if (IsKeyPressed(KEY_C)) {
+            // Clock enough times to execute a whole CPU instruction
+            do { NesClock(cpu->bus); } while (!CpuComplete());
+            // CPU clock runs slower than system clock, so it may be
+            // complete for additional system clock cycles. Drain
+            // those out
+            do { NesClock(cpu->bus); } while (!CpuComplete());
+        }
+
+        // Emulate one whole frame
+        if (IsKeyPressed(KEY_F)) {
+            // Clock enough times to draw a single frame
+            do { NesClock(cpu->bus); } while (!ppu->frameCompleted);
+            // Use residual clock cycles to complete current instruction
+            do { NesClock(cpu->bus); } while (!CpuComplete());
+            // Reset frame completion flag
+            ppu->frameCompleted = false;
+        }
     }
 
-    if (IsKeyPressed(KEY_R))
-        CpuReset();
-
-    if (IsKeyPressed(KEY_I))
-        CpuIrq();
-
-    if (IsKeyPressed(KEY_N))
-        CpuNmi();
+    if (IsKeyPressed(KEY_SPACE)) emulationRun = !emulationRun;
+    if (IsKeyPressed(KEY_R)) NesReset(cpu->bus);	
 }
 
 void StartDemo() {
     printf("Hello, Demo!\n");
-    InitWindow(680, 480, "NES Instructions Demo");
+    InitWindow(780, 480, "NES Instructions Demo");
     
     SetupDemo();
     while (!WindowShouldClose()) {
-        GetInput();
+        UpdateDemo();
         BeginDrawing();
             ClearBackground(WHITE);
-            DrawCpu(450, 2);
-            DrawCode(450, 72, 26);
-            DrawText("SPACE = Step Instruction    R = RESET    I = IRQ    N = NMI", 10, 370, 4, BLACK);
+            DrawCpu(516, 2);
+            DrawCode(516, 72, 26);
+            DrawSprite(ppu->spriteScreen, 0, 0, 2);
         EndDrawing();
     }
 }

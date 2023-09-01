@@ -42,7 +42,6 @@ Cartridge *CartridgeCreate(const char *romPath) {
     if (header.mapper1 & 0x04)
         fseek(fd, 512, SEEK_CUR);   // Ignore the 512 bytes of Training information in case that exist
 
-    printf("Creating cartridge...\n");
     Cartridge *cartridge = (Cartridge*)malloc(sizeof(Cartridge));
     if (!cartridge) { 
         fprintf(stderr, "Could't allocate space for the cartridge\n");
@@ -53,7 +52,6 @@ Cartridge *CartridgeCreate(const char *romPath) {
     cartridge->nPRGBanks = header.PRG_chunks;
     cartridge->nCHRBanks = header.CHR_chunks;
     cartridge->mapperID = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
-    printf("Cartridge created!\n");
 
     u8 fileType = 1;
     // By the moment we only consider file type 1
