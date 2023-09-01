@@ -13,6 +13,7 @@ static Cpu6502 *cpu = {0};
 static Ppu2C02 *ppu = {0};
 static bool emulationRun = false;
 static float residualTime = 0.0f;
+static u8 selectedPalette = 0;
 
 static char* hex(u32 n, u8 d, char *dst) {
     strset(dst, 0);
@@ -198,7 +199,9 @@ void UpdateDemo() {
     }
 
     if (IsKeyPressed(KEY_SPACE)) emulationRun = !emulationRun;
-    if (IsKeyPressed(KEY_R)) NesReset(cpu->bus);	
+    if (IsKeyPressed(KEY_R)) NesReset(cpu->bus);
+
+    if (IsKeyPressed(KEY_P)) selectedPalette = (selectedPalette + 1) % 8;	
 }
 
 void StartDemo() {
@@ -206,13 +209,26 @@ void StartDemo() {
     InitWindow(780, 480, "NES Instructions Demo");
     
     SetupDemo();
+    const int nSwatchSize = 6;
     while (!WindowShouldClose()) {
         UpdateDemo();
         BeginDrawing();
             ClearBackground(WHITE);
             DrawCpu(516, 2);
             DrawCode(516, 72, 26);
+
             DrawSprite(ppu->spriteScreen, 0, 0, 2);
+
+            for (int p = 0; p < 8; p++) // For each palette
+                for(int s = 0; s < 4; s++) // For each index
+                    DrawRectangle(516 + p * (nSwatchSize * 5) + s * nSwatchSize, 340, 
+                        nSwatchSize, nSwatchSize, GetColourFromPaletteRam(p, s));
+		
+            // Draw selection reticule around selected palette
+            DrawRectangleLines(516 + selectedPalette * (nSwatchSize * 5) - 1, 339, (nSwatchSize * 4), nSwatchSize, WHITE);
+            
+            DrawSprite(GetPatternTable(0, selectedPalette), 516, 348, 1);
+            DrawSprite(GetPatternTable(1, selectedPalette), 648, 348, 1);
         EndDrawing();
     }
 }

@@ -16,7 +16,7 @@ u8 BusRead(Bus *bus, u16 addr) {
         return MemoryRead(bus->memory, addr);
     }
     else if (addr >= 0x2000 && addr <= 0x3FFF) {
-        return CpuReadFromPpu(addr);
+        return CpuReadFromPpu(addr, false);
     }
     return data;
 }
