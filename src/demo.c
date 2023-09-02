@@ -175,7 +175,7 @@ void UpdateDemo() {
             do { NesClock(cpu->bus); } while (!ppu->frameCompleted);
             ppu->frameCompleted = false;
         }
-	}
+    }
     else {
         // Emulate code step-by-step
         if (IsKeyDown(KEY_C)) {
@@ -223,7 +223,7 @@ void StartDemo() {
                 for(int s = 0; s < 4; s++) // For each index
                     DrawRectangle(516 + p * (nSwatchSize * 5) + s * nSwatchSize, 340, 
                         nSwatchSize, nSwatchSize, GetColourFromPaletteRam(p, s));
-		
+
             // Draw selection reticule around selected palette
             DrawRectangleLines(516 + selectedPalette * (nSwatchSize * 5) - 1, 339, (nSwatchSize * 4) + 2, nSwatchSize + 2, WHITE);
             

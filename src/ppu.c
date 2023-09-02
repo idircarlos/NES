@@ -11,72 +11,72 @@ static Ppu2C02 ppu = {0};
 
 void PpuInit() {
     ppu.paletteScreen[0x00] = ColorBuild(84, 84, 84);
-	ppu.paletteScreen[0x01] = ColorBuild(0, 30, 116);
-	ppu.paletteScreen[0x02] = ColorBuild(8, 16, 144);
-	ppu.paletteScreen[0x03] = ColorBuild(48, 0, 136);
-	ppu.paletteScreen[0x04] = ColorBuild(68, 0, 100);
-	ppu.paletteScreen[0x05] = ColorBuild(92, 0, 48);
-	ppu.paletteScreen[0x06] = ColorBuild(84, 4, 0);
-	ppu.paletteScreen[0x07] = ColorBuild(60, 24, 0);
-	ppu.paletteScreen[0x08] = ColorBuild(32, 42, 0);
-	ppu.paletteScreen[0x09] = ColorBuild(8, 58, 0);
-	ppu.paletteScreen[0x0A] = ColorBuild(0, 64, 0);
-	ppu.paletteScreen[0x0B] = ColorBuild(0, 60, 0);
-	ppu.paletteScreen[0x0C] = ColorBuild(0, 50, 60);
-	ppu.paletteScreen[0x0D] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x0E] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x0F] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x01] = ColorBuild(0, 30, 116);
+    ppu.paletteScreen[0x02] = ColorBuild(8, 16, 144);
+    ppu.paletteScreen[0x03] = ColorBuild(48, 0, 136);
+    ppu.paletteScreen[0x04] = ColorBuild(68, 0, 100);
+    ppu.paletteScreen[0x05] = ColorBuild(92, 0, 48);
+    ppu.paletteScreen[0x06] = ColorBuild(84, 4, 0);
+    ppu.paletteScreen[0x07] = ColorBuild(60, 24, 0);
+    ppu.paletteScreen[0x08] = ColorBuild(32, 42, 0);
+    ppu.paletteScreen[0x09] = ColorBuild(8, 58, 0);
+    ppu.paletteScreen[0x0A] = ColorBuild(0, 64, 0);
+    ppu.paletteScreen[0x0B] = ColorBuild(0, 60, 0);
+    ppu.paletteScreen[0x0C] = ColorBuild(0, 50, 60);
+    ppu.paletteScreen[0x0D] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x0E] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x0F] = ColorBuild(0, 0, 0);
 
-	ppu.paletteScreen[0x10] = ColorBuild(152, 150, 152);
-	ppu.paletteScreen[0x11] = ColorBuild(8, 76, 196);
-	ppu.paletteScreen[0x12] = ColorBuild(48, 50, 236);
-	ppu.paletteScreen[0x13] = ColorBuild(92, 30, 228);
-	ppu.paletteScreen[0x14] = ColorBuild(136, 20, 176);
-	ppu.paletteScreen[0x15] = ColorBuild(160, 20, 100);
-	ppu.paletteScreen[0x16] = ColorBuild(152, 34, 32);
-	ppu.paletteScreen[0x17] = ColorBuild(120, 60, 0);
-	ppu.paletteScreen[0x18] = ColorBuild(84, 90, 0);
-	ppu.paletteScreen[0x19] = ColorBuild(40, 114, 0);
-	ppu.paletteScreen[0x1A] = ColorBuild(8, 124, 0);
-	ppu.paletteScreen[0x1B] = ColorBuild(0, 118, 40);
-	ppu.paletteScreen[0x1C] = ColorBuild(0, 102, 120);
-	ppu.paletteScreen[0x1D] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x1E] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x1F] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x10] = ColorBuild(152, 150, 152);
+    ppu.paletteScreen[0x11] = ColorBuild(8, 76, 196);
+    ppu.paletteScreen[0x12] = ColorBuild(48, 50, 236);
+    ppu.paletteScreen[0x13] = ColorBuild(92, 30, 228);
+    ppu.paletteScreen[0x14] = ColorBuild(136, 20, 176);
+    ppu.paletteScreen[0x15] = ColorBuild(160, 20, 100);
+    ppu.paletteScreen[0x16] = ColorBuild(152, 34, 32);
+    ppu.paletteScreen[0x17] = ColorBuild(120, 60, 0);
+    ppu.paletteScreen[0x18] = ColorBuild(84, 90, 0);
+    ppu.paletteScreen[0x19] = ColorBuild(40, 114, 0);
+    ppu.paletteScreen[0x1A] = ColorBuild(8, 124, 0);
+    ppu.paletteScreen[0x1B] = ColorBuild(0, 118, 40);
+    ppu.paletteScreen[0x1C] = ColorBuild(0, 102, 120);
+    ppu.paletteScreen[0x1D] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x1E] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x1F] = ColorBuild(0, 0, 0);
 
-	ppu.paletteScreen[0x20] = ColorBuild(236, 238, 236);
-	ppu.paletteScreen[0x21] = ColorBuild(76, 154, 236);
-	ppu.paletteScreen[0x22] = ColorBuild(120, 124, 236);
-	ppu.paletteScreen[0x23] = ColorBuild(176, 98, 236);
-	ppu.paletteScreen[0x24] = ColorBuild(228, 84, 236);
-	ppu.paletteScreen[0x25] = ColorBuild(236, 88, 180);
-	ppu.paletteScreen[0x26] = ColorBuild(236, 106, 100);
-	ppu.paletteScreen[0x27] = ColorBuild(212, 136, 32);
-	ppu.paletteScreen[0x28] = ColorBuild(160, 170, 0);
-	ppu.paletteScreen[0x29] = ColorBuild(116, 196, 0);
-	ppu.paletteScreen[0x2A] = ColorBuild(76, 208, 32);
-	ppu.paletteScreen[0x2B] = ColorBuild(56, 204, 108);
-	ppu.paletteScreen[0x2C] = ColorBuild(56, 180, 204);
-	ppu.paletteScreen[0x2D] = ColorBuild(60, 60, 60);
-	ppu.paletteScreen[0x2E] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x2F] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x20] = ColorBuild(236, 238, 236);
+    ppu.paletteScreen[0x21] = ColorBuild(76, 154, 236);
+    ppu.paletteScreen[0x22] = ColorBuild(120, 124, 236);
+    ppu.paletteScreen[0x23] = ColorBuild(176, 98, 236);
+    ppu.paletteScreen[0x24] = ColorBuild(228, 84, 236);
+    ppu.paletteScreen[0x25] = ColorBuild(236, 88, 180);
+    ppu.paletteScreen[0x26] = ColorBuild(236, 106, 100);
+    ppu.paletteScreen[0x27] = ColorBuild(212, 136, 32);
+    ppu.paletteScreen[0x28] = ColorBuild(160, 170, 0);
+    ppu.paletteScreen[0x29] = ColorBuild(116, 196, 0);
+    ppu.paletteScreen[0x2A] = ColorBuild(76, 208, 32);
+    ppu.paletteScreen[0x2B] = ColorBuild(56, 204, 108);
+    ppu.paletteScreen[0x2C] = ColorBuild(56, 180, 204);
+    ppu.paletteScreen[0x2D] = ColorBuild(60, 60, 60);
+    ppu.paletteScreen[0x2E] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x2F] = ColorBuild(0, 0, 0);
 
-	ppu.paletteScreen[0x30] = ColorBuild(236, 238, 236);
-	ppu.paletteScreen[0x31] = ColorBuild(168, 204, 236);
-	ppu.paletteScreen[0x32] = ColorBuild(188, 188, 236);
-	ppu.paletteScreen[0x33] = ColorBuild(212, 178, 236);
-	ppu.paletteScreen[0x34] = ColorBuild(236, 174, 236);
-	ppu.paletteScreen[0x35] = ColorBuild(236, 174, 212);
-	ppu.paletteScreen[0x36] = ColorBuild(236, 180, 176);
-	ppu.paletteScreen[0x37] = ColorBuild(228, 196, 144);
-	ppu.paletteScreen[0x38] = ColorBuild(204, 210, 120);
-	ppu.paletteScreen[0x39] = ColorBuild(180, 222, 120);
-	ppu.paletteScreen[0x3A] = ColorBuild(168, 226, 144);
-	ppu.paletteScreen[0x3B] = ColorBuild(152, 226, 180);
-	ppu.paletteScreen[0x3C] = ColorBuild(160, 214, 228);
-	ppu.paletteScreen[0x3D] = ColorBuild(160, 162, 160);
-	ppu.paletteScreen[0x3E] = ColorBuild(0, 0, 0);
-	ppu.paletteScreen[0x3F] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x30] = ColorBuild(236, 238, 236);
+    ppu.paletteScreen[0x31] = ColorBuild(168, 204, 236);
+    ppu.paletteScreen[0x32] = ColorBuild(188, 188, 236);
+    ppu.paletteScreen[0x33] = ColorBuild(212, 178, 236);
+    ppu.paletteScreen[0x34] = ColorBuild(236, 174, 236);
+    ppu.paletteScreen[0x35] = ColorBuild(236, 174, 212);
+    ppu.paletteScreen[0x36] = ColorBuild(236, 180, 176);
+    ppu.paletteScreen[0x37] = ColorBuild(228, 196, 144);
+    ppu.paletteScreen[0x38] = ColorBuild(204, 210, 120);
+    ppu.paletteScreen[0x39] = ColorBuild(180, 222, 120);
+    ppu.paletteScreen[0x3A] = ColorBuild(168, 226, 144);
+    ppu.paletteScreen[0x3B] = ColorBuild(152, 226, 180);
+    ppu.paletteScreen[0x3C] = ColorBuild(160, 214, 228);
+    ppu.paletteScreen[0x3D] = ColorBuild(160, 162, 160);
+    ppu.paletteScreen[0x3E] = ColorBuild(0, 0, 0);
+    ppu.paletteScreen[0x3F] = ColorBuild(0, 0, 0);
 
     ppu.spriteScreen = SpriteCreate(256, 240);
     ppu.spriteNameTable[0] = SpriteCreate(256, 240);
@@ -293,25 +293,22 @@ Color GetColourFromPaletteRam(u8 palette, u8 pixel) {
 
 Sprite *GetPatternTable(u8 i, u8 palette) {
     for (u16 nTileY = 0; nTileY < 16; nTileY++) {
-		for (u16 nTileX = 0; nTileX < 16; nTileX++) {
-			u16 nOffset = nTileY * 256 + nTileX * 16;
-
-			// Now loop through 8 rows of 8 pixels (Tile)
-			for (u16 row = 0; row < 8; row++) {
-				u8 tile_lsb = PpuRead(i * 0x1000 + nOffset + row + 0x0000);
-				u8 tile_msb = PpuRead(i * 0x1000 + nOffset + row + 0x0008);
-
-				for (u16 col = 0; col < 8; col++) {
-					u8 pixel = ((tile_lsb & 0x01) << 0) | ((tile_msb & 0x01) << 1);
-					tile_lsb >>= 1; tile_msb >>= 1;
+        for (u16 nTileX = 0; nTileX < 16; nTileX++) {
+            u16 nOffset = nTileY * 256 + nTileX * 16;
+            // Now loop through 8 rows of 8 pixels (Tile)
+            for (u16 row = 0; row < 8; row++) {
+                u8 tile_lsb = PpuRead(i * 0x1000 + nOffset + row + 0x0000);
+                u8 tile_msb = PpuRead(i * 0x1000 + nOffset + row + 0x0008);
+                for (u16 col = 0; col < 8; col++) {
+                    u8 pixel = ((tile_lsb & 0x01) << 0) | ((tile_msb & 0x01) << 1);
+                    tile_lsb >>= 1; tile_msb >>= 1;
                     Color c = GetColourFromPaletteRam(palette, pixel);
-					SpriteSetPixel(ppu.spritePatternTable[i], nTileX * 8 + (7 - col), nTileY * 8 + row, c);
-				}
-			}
-		}
-	}
-
-	return ppu.spritePatternTable[i];
+                    SpriteSetPixel(ppu.spritePatternTable[i], nTileX * 8 + (7 - col), nTileY * 8 + row, c);
+                }
+            }
+        }
+    }
+    return ppu.spritePatternTable[i];
 }
 
 void PpuClock() {
@@ -329,13 +326,13 @@ void PpuClock() {
     SpriteSetPixel(ppu.spriteScreen, ppu.cycle - 1, ppu.scanline, ppu.paletteScreen[(rand() % 2) ? 0x3F : 0x30]);
     
     // Advance renderer - it never stops, it's relentless
-	ppu.cycle++;
-	if (ppu.cycle >= 341) {
-		ppu.cycle = 0;
-		ppu.scanline++;
-		if (ppu.scanline >= 261) {
-			ppu.scanline = -1;
-			ppu.frameCompleted = true;
-		}
-	}
+    ppu.cycle++;
+    if (ppu.cycle >= 341) {
+        ppu.cycle = 0;
+        ppu.scanline++;
+        if (ppu.scanline >= 261) {
+            ppu.scanline = -1;
+            ppu.frameCompleted = true;
+        }
+    }
 }

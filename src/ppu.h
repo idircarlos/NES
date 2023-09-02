@@ -73,8 +73,8 @@ typedef struct {
     bool frameCompleted;
     PpuRegisters registers;
     // Internal communications
-	u8 addressLatch;
-	u8 ppuDataBuffer;
+    u8 addressLatch;
+    u8 ppuDataBuffer;
     u16 ppuAddr;
     bool nmi;
 } Ppu2C02;

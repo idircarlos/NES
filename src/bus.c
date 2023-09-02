@@ -46,8 +46,8 @@ void NesReset(Bus *bus) {
 void NesClock(Bus *bus) {
     PpuClock();
     if (systemClocks % 3 == 0) {
-		CpuClock();
-	}
+        CpuClock();
+    }
 
     if (bus->ppu->nmi) {
         bus->ppu->nmi = false;  // Reset the nmi flag
