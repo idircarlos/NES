@@ -40,7 +40,7 @@ typedef struct {
 } CpuInstruction;
 
 static CpuInstruction LOOKUP [16*16]= {
-    { "BRK", BRK, IMM, 7 },{ "ORA", ORA, IZX, 6 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 3 },{ "ORA", ORA, ZP0, 3 },{ "ASL", ASL, ZP0, 5 },{ "???", XXX, IMP, 5 },{ "PHP", PHP, IMP, 3 },{ "ORA", ORA, IMM, 2 },{ "ASL", ASL, IMP, 2 },{ "???", XXX, IMP, 2 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ABS, 4 },{ "ASL", ASL, ABS, 6 },{ "???", XXX, IMP, 6 },
+    { "BRK", BRK, IMP, 7 },{ "ORA", ORA, IZX, 6 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 3 },{ "ORA", ORA, ZP0, 3 },{ "ASL", ASL, ZP0, 5 },{ "???", XXX, IMP, 5 },{ "PHP", PHP, IMP, 3 },{ "ORA", ORA, IMM, 2 },{ "ASL", ASL, IMP, 2 },{ "???", XXX, IMP, 2 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ABS, 4 },{ "ASL", ASL, ABS, 6 },{ "???", XXX, IMP, 6 },
     { "BPL", BPL, REL, 2 },{ "ORA", ORA, IZY, 5 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ZPX, 4 },{ "ASL", ASL, ZPX, 6 },{ "???", XXX, IMP, 6 },{ "CLC", CLC, IMP, 2 },{ "ORA", ORA, ABY, 4 },{ "???", NOP, IMP, 2 },{ "???", XXX, IMP, 7 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ABX, 4 },{ "ASL", ASL, ABX, 7 },{ "???", XXX, IMP, 7 },
     { "JSR", JSR, ABS, 6 },{ "AND", AND, IZX, 6 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "BIT", BIT, ZP0, 3 },{ "AND", AND, ZP0, 3 },{ "ROL", ROL, ZP0, 5 },{ "???", XXX, IMP, 5 },{ "PLP", PLP, IMP, 4 },{ "AND", AND, IMM, 2 },{ "ROL", ROL, IMP, 2 },{ "???", XXX, IMP, 2 },{ "BIT", BIT, ABS, 4 },{ "AND", AND, ABS, 4 },{ "ROL", ROL, ABS, 6 },{ "???", XXX, IMP, 6 },
     { "BMI", BMI, REL, 2 },{ "AND", AND, IZY, 5 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 4 },{ "AND", AND, ZPX, 4 },{ "ROL", ROL, ZPX, 6 },{ "???", XXX, IMP, 6 },{ "SEC", SEC, IMP, 2 },{ "AND", AND, ABY, 4 },{ "???", NOP, IMP, 2 },{ "???", XXX, IMP, 7 },{ "???", NOP, IMP, 4 },{ "AND", AND, ABX, 4 },{ "ROL", ROL, ABX, 7 },{ "???", XXX, IMP, 7 },
@@ -102,6 +102,7 @@ void CpuSetFlag(CpuStatusFlag flag, bool one) {
 void CpuClock() {
     if (cpu.cycles == 0) {
         cpu.opcode = CpuRead(cpu.PC);
+        CpuSetFlag(U, true);
         cpu.PC++;
 
         CpuInstruction instruction = LOOKUP[cpu.opcode];
@@ -109,7 +110,7 @@ void CpuClock() {
         u8 addrmode_additional_cycle = instruction.addrmode();
         u8 operate_additional_cycle = instruction.operate();
         cpu.cycles += addrmode_additional_cycle & operate_additional_cycle; 
-        
+        CpuSetFlag(U, true);
     }
     cpu.cycles--;
 }
@@ -373,7 +374,7 @@ u8 IZX() {
     u16 t = CpuRead(cpu.PC++);
     u16 lo = CpuRead((u16)(t + (u16)cpu.X) & 0x00FF);
     u16 hi = CpuRead((u16)(t + (u16)cpu.X + 1) & 0x00FF);
-    cpu.addr_abs = (lo << 8) | hi;
+    cpu.addr_abs = (hi << 8) | lo;
     return 0;
 }
 
@@ -381,7 +382,7 @@ u8 IZY() {
     u16 t = CpuRead(cpu.PC++);
     u16 lo = CpuRead(t & 0x00FF);
     u16 hi = CpuRead((t + 1) & 0x00FF);
-    cpu.addr_abs = ((lo << 8) | hi) + cpu.Y;
+    cpu.addr_abs = ((hi << 8) | lo) + cpu.Y;
     // If the addr is in a new page, then we may need another clock cycle
     if ((cpu.addr_abs & 0xFF00) != (hi << 8)) {
         return 1;
@@ -456,11 +457,11 @@ u8 ADC() {
     CpuFetch();
     cpu.temp = (u16)cpu.A + (u16)cpu.fetched + (u16)CpuGetFlag(C);
     CpuSetFlag(C, cpu.temp > 255);
-    CpuSetFlag(Z, cpu.temp & 0x00FF);
+    CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0);
     CpuSetFlag(V, (~((u16)cpu.A ^ (u16)cpu.fetched) & ((u16)cpu.A ^ (u16)cpu.temp)) & 0x0080);
     CpuSetFlag(N, cpu.temp & 0x80);
     
-    cpu.A = (u8)(cpu.temp & 0x00FF);
+    cpu.A = cpu.temp & 0x00FF;
     return 1;
 }
 
@@ -570,13 +571,13 @@ u8 BPL() {
 
 u8 BRK() {
     cpu.PC++;
-    CpuSetFlag(I, true);
+    CpuSetFlag(I, 1);
     CpuWrite(ABS_SP(cpu.SP--), (cpu.PC >> 8) & 0x00FF);
     CpuWrite(ABS_SP(cpu.SP--), cpu.PC & 0x00FF);
     
-    CpuSetFlag(B, true);
-    CpuWrite(cpu.SP--, cpu.status);
-    CpuSetFlag(B, false);
+    CpuSetFlag(B, 1);
+    CpuWrite(ABS_SP(cpu.SP--), cpu.status);
+    CpuSetFlag(B, 0);
     
     cpu.PC = (u16)CpuRead(0xFFFE) | ((u16)CpuRead(0xFFFF)) << 8;
     return 0;
@@ -632,7 +633,7 @@ u8 CMP() {
 	CpuSetFlag(C, cpu.A >= cpu.fetched);
 	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
 	CpuSetFlag(N, cpu.temp & 0x0080);
-    return 0;
+    return 1;
 }
 
 u8 CPX() {
@@ -657,8 +658,8 @@ u8 DEC() {
     CpuFetch();
     cpu.temp = cpu.fetched - 1;
     CpuWrite(cpu.addr_abs, cpu.temp & 0x00FF);
-    CpuSetFlag(Z, cpu.X == 0x00);
-    CpuSetFlag(N, cpu.X & 0x80);
+    CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x00);
+    CpuSetFlag(N, cpu.temp & 0x80);
     return 0;
 }
 
@@ -780,11 +781,10 @@ u8 ORA() {
     cpu.A |= cpu.fetched;
     CpuSetFlag(Z, cpu.A == 0x00);
     CpuSetFlag(N, cpu.A & 0x80);
-    return 0;
+    return 1;
 }
 
 // Push Accumulator to the Stack
-
 u8 PHA() {
     CpuWrite(ABS_SP(cpu.SP--), cpu.A);    
     return 0;
@@ -792,9 +792,8 @@ u8 PHA() {
 
 u8 PHP() {
     CpuWrite(ABS_SP(cpu.SP--), cpu.status | B | U);
-    CpuSetFlag(C, false);
-    CpuSetFlag(C, true);
-    
+    CpuSetFlag(B, 0);
+    CpuSetFlag(U, 0);
     return 0;
 }
 
@@ -808,13 +807,13 @@ u8 PLA() {
 
 u8 PLP() {
     cpu.status = CpuRead(ABS_SP(++cpu.SP));
-    CpuSetFlag(U, true);
+    CpuSetFlag(U, 1);
     return 0; 
 }
 
 u8 ROL() {
     CpuFetch();
-	cpu.temp = (uint16_t)(cpu.fetched << C) | CpuGetFlag(C);
+	cpu.temp = (u16)(cpu.fetched << C) | CpuGetFlag(C);
 	CpuSetFlag(C, cpu.temp & 0xFF00);
 	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
 	CpuSetFlag(N, cpu.temp & 0x0080);
@@ -828,7 +827,7 @@ u8 ROL() {
 
 u8 ROR() {
     CpuFetch();
-	cpu.temp = (uint16_t)(CpuGetFlag(C) << 7) | (cpu.fetched >> C);
+	cpu.temp = (u16)(CpuGetFlag(C) << 7) | (cpu.fetched >> C);
 	CpuSetFlag(C, cpu.temp & 0x01);
 	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
 	CpuSetFlag(N, cpu.temp & 0x0080);
@@ -841,14 +840,6 @@ u8 ROR() {
 }
 
 u8 RTI() {
-    u16 pc_lo = CpuRead(ABS_SP(++cpu.SP));
-    u16 pc_hi = CpuRead(ABS_SP(++cpu.SP));
-    cpu.PC = (pc_hi << 8) | pc_lo;
-    cpu.PC++;
-    return 0;
-}
-
-u8 RTS() {
     cpu.status = CpuRead(ABS_SP(++cpu.SP));
     CpuSetFlag(B, ~CpuGetFlag(B));
     CpuSetFlag(U, ~CpuGetFlag(U));
@@ -858,30 +849,38 @@ u8 RTS() {
     return 0;
 }
 
+u8 RTS() {
+    u16 pc_lo = CpuRead(ABS_SP(++cpu.SP));
+    u16 pc_hi = CpuRead(ABS_SP(++cpu.SP));
+    cpu.PC = (pc_hi << 8) | pc_lo;
+    cpu.PC++;
+    return 0;
+}
+
 u8 SBC() {
     CpuFetch();
     u16 inverted = (u16)(cpu.fetched ^ 0x00FF); 
-    u16 result = (u16)cpu.A + inverted + (u16)CpuGetFlag(C);
-    CpuSetFlag(C, result > 255);
-    CpuSetFlag(Z, result & 0x00FF);
-    CpuSetFlag(N, result & 0x80);
-    CpuSetFlag(V, (((u16)cpu.A ^ (u16)result) & ~((u16)cpu.A ^ (u16)cpu.fetched)) & 0x0080);
-    cpu.A += (u8)(result & 0x00FF);
+    cpu.temp = (u16)cpu.A + inverted + (u16)CpuGetFlag(C);
+    CpuSetFlag(C, cpu.temp && 0xFF00);
+    CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0);
+    CpuSetFlag(V, (cpu.temp ^ (u16)cpu.A) & (cpu.temp ^ inverted) & 0x0080);
+    CpuSetFlag(N, cpu.temp & 0x80);
+    cpu.A = cpu.temp & 0x00FF;
     return 1;
 }
 
 u8 SEC() {
-    CpuSetFlag(C, true);
+    CpuSetFlag(C, 1);
     return 0;
 }
 
 u8 SED() {
-    CpuSetFlag(D, true);
+    CpuSetFlag(D, 1);
     return 0;
 }
 
 u8 SEI() {
-    CpuSetFlag(I, true);
+    CpuSetFlag(I, 1);
     return 0;
 }
 

@@ -76,6 +76,7 @@ typedef struct {
 	u8 addressLatch;
 	u8 ppuDataBuffer;
     u16 ppuAddr;
+    bool nmi;
 } Ppu2C02;
 
 void PpuInit();

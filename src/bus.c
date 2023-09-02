@@ -48,5 +48,10 @@ void NesClock(Bus *bus) {
     if (systemClocks % 3 == 0) {
 		CpuClock();
 	}
+
+    if (bus->ppu->nmi) {
+        bus->ppu->nmi = false;  // Reset the nmi flag
+        CpuNmi();
+    }
     systemClocks++;
 }

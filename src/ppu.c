@@ -7,10 +7,6 @@ Color ColorBuild(u8 r, u8 g, u8 b) {
     return (Color){r,g,b,255};
 }
 
-Color ColorBuildA(u8 r, u8 g, u8 b, u8 a) {
-    return (Color){r,g,b,a};
-}
-
 static Ppu2C02 ppu = {0};
 
 void PpuInit() {
@@ -98,6 +94,8 @@ void PpuInit() {
     ppu.addressLatch = 0x00;
     ppu.ppuDataBuffer = 0x00;
     ppu.ppuAddr = 0x0000;
+
+    ppu.nmi = false;
 }
 
 Sprite *SpriteCreate(u16 width, u16 height) {
@@ -162,7 +160,6 @@ u8 CpuReadFromPpu(u16 addr, bool readOnly) {
             
             // Status
             case 0x0002:
-                ppu.registers.status.bits.verticalBlank = 1;
                 data = (ppu.registers.status.reg & 0xE0) | (ppu.ppuDataBuffer & 0x1F);
                 ppu.registers.status.bits.verticalBlank = 0;
                 ppu.addressLatch = 0;
@@ -185,7 +182,7 @@ u8 CpuReadFromPpu(u16 addr, bool readOnly) {
                 data = ppu.ppuDataBuffer;
                 ppu.ppuDataBuffer = PpuRead(ppu.ppuAddr);
                 if (ppu.ppuAddr >= 0x3F00) data = ppu.ppuDataBuffer;
-                ppu.ppuAddr += (ppu.registers.ctrl.bits.incrementMode ? 32 : 1);
+                ppu.ppuAddr++;
                 break;
 		}
 	}
@@ -211,7 +208,7 @@ void CpuWriteToPpu(u16 addr, u8 data) {
             break;
         case 0x0006: // PPU Address
             if (ppu.addressLatch == 0) {
-                ppu.ppuAddr = (u16)((data & 0x3F) << 8) | (ppu.ppuAddr & 0x00FF);
+                ppu.ppuAddr = (ppu.ppuAddr & 0x00FF) | (data << 8);
                 ppu.addressLatch = 1;
             }
             else {
@@ -221,7 +218,7 @@ void CpuWriteToPpu(u16 addr, u8 data) {
             break;
         case 0x0007: // PPU Data
             PpuWrite(ppu.ppuAddr, data);
-            ppu.ppuAddr += (ppu.registers.ctrl.bits.incrementMode ? 32 : 1);
+            ppu.ppuAddr++;
             break;
     }
 }
@@ -265,7 +262,7 @@ void PpuWrite(u16 addr, u8 data) {
     else if (addr >= 0x0000 && addr <= 0x1FFF) {
         // This memory acts as a ROM for the PPU,
         // but for som NES ROMs, this memory is a RAM.
-        ppu.patternTable[(addr & 0x1000) >> 12][addr & 0x0FFF] =  data;
+        ppu.patternTable[(addr & 0x1000) >> 12][addr & 0x0FFF] = data;
     }
     // Name table
     else if (addr >= 0x2000 && addr <= 0x3EFF) {
@@ -301,13 +298,14 @@ Sprite *GetPatternTable(u8 i, u8 palette) {
 
 			// Now loop through 8 rows of 8 pixels (Tile)
 			for (u16 row = 0; row < 8; row++) {
-				uint8_t tile_lsb = PpuRead(i * 0x1000 + nOffset + row + 0x0000);
-				uint8_t tile_msb = PpuRead(i * 0x1000 + nOffset + row + 0x0008);
+				u8 tile_lsb = PpuRead(i * 0x1000 + nOffset + row + 0x0000);
+				u8 tile_msb = PpuRead(i * 0x1000 + nOffset + row + 0x0008);
 
-				for (uint16_t col = 0; col < 8; col++) {
-					uint8_t pixel = (tile_lsb & 0x01) + (tile_msb & 0x01);
+				for (u16 col = 0; col < 8; col++) {
+					u8 pixel = ((tile_lsb & 0x01) << 0) | ((tile_msb & 0x01) << 1);
 					tile_lsb >>= 1; tile_msb >>= 1;
-					SpriteSetPixel(ppu.spritePatternTable[i], nTileX * 8 + (7 - col), nTileY * 8 + row, GetColourFromPaletteRam(palette, pixel));
+                    Color c = GetColourFromPaletteRam(palette, pixel);
+					SpriteSetPixel(ppu.spritePatternTable[i], nTileX * 8 + (7 - col), nTileY * 8 + row, c);
 				}
 			}
 		}
@@ -317,6 +315,16 @@ Sprite *GetPatternTable(u8 i, u8 palette) {
 }
 
 void PpuClock() {
+    if (ppu.scanline == -1 && ppu.cycle == 1) {
+        ppu.registers.status.bits.verticalBlank = 0;
+    }
+
+    if (ppu.scanline == 241 && ppu.cycle == 1) {
+        ppu.registers.status.bits.verticalBlank = 1;
+        if (ppu.registers.ctrl.bits.enableNmi) {
+            ppu.nmi = true;
+        }
+    }
     // Fake some noise
     SpriteSetPixel(ppu.spriteScreen, ppu.cycle - 1, ppu.scanline, ppu.paletteScreen[(rand() % 2) ? 0x3F : 0x30]);
     

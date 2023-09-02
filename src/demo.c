@@ -46,7 +46,7 @@ void DrawRam(int x, int y, uint16_t nAddr, int nRows, int nColumns) {
 
 void DrawCpu(int x, int y) {
     char hex_aux[16];
-    DrawText("STATUS:", x , y , 4, BLACK);
+    DrawText("STATUS:", x , y , 4, WHITE);
     DrawText("N", x  + 64, y,  4, cpu->status & N ? GREEN : RED);
     DrawText("V",x  + 80, y ,  4, cpu->status & V ? GREEN : RED);
     DrawText("-",x  + 96, y ,  4, cpu->status & U ? GREEN : RED);
@@ -98,23 +98,23 @@ void DrawCpu(int x, int y) {
     strcat(sp, hex(cpu->SP, 4, hex_aux));
 
 
-    DrawText(pc, x , y + 10, 4, BLACK);
-    DrawText(a, x , y + 20, 4, BLACK);
-    DrawText(xr, x , y + 30, 4, BLACK);
-    DrawText(yr, x , y + 40, 4, BLACK);
-    DrawText(sp, x , y + 50, 4, BLACK);
+    DrawText(pc, x , y + 10, 4, WHITE);
+    DrawText(a, x , y + 20, 4, WHITE);
+    DrawText(xr, x , y + 30, 4, WHITE);
+    DrawText(yr, x , y + 40, 4, WHITE);
+    DrawText(sp, x , y + 50, 4, WHITE);
 }
 
 void DrawCode(int x, int y, int nLines) {
     int nLineY = (nLines >> 1) * 10 + y;
     u16 pc = cpu->PC;
     char *pcLine = mapAsm[pc++];
-    DrawText(pcLine, x, nLineY, 4, BLUE);
+    DrawText(pcLine, x, nLineY, 4, GREEN);
     while (nLineY < (nLines * 10) + y) {
         pcLine = mapAsm[pc++];
         if (pcLine != NULL) {
             nLineY += 10;
-            DrawText(pcLine, x, nLineY, 4, BLACK); 
+            DrawText(pcLine, x, nLineY, 4, WHITE); 
         }  
     }
     pc = cpu->PC;
@@ -123,7 +123,7 @@ void DrawCode(int x, int y, int nLines) {
         pcLine = mapAsm[--pc];
         if (pcLine != NULL) {
             nLineY -= 10;
-            DrawText(pcLine, x, nLineY, 4, BLACK); 
+            DrawText(pcLine, x, nLineY, 4, WHITE); 
         }
     }
 }
@@ -157,7 +157,7 @@ void DrawSprite(Sprite *sprite, u16 x, u16 y, u32 scale) {
 void SetupDemo() {
     cpu = CpuGet();
     ppu = PpuGet();
-    Cartridge *cartridge = CartridgeCreate("./nestest.nes");
+    Cartridge *cartridge = CartridgeCreate("./dk.nes");
     NesInsertCartridge(cpu->bus, cartridge);
     // Extract dissassembly
     CpuDisassemble(0x0000, 0xFFFF, mapAsm);
@@ -178,7 +178,7 @@ void UpdateDemo() {
 	}
     else {
         // Emulate code step-by-step
-        if (IsKeyPressed(KEY_C)) {
+        if (IsKeyDown(KEY_C)) {
             // Clock enough times to execute a whole CPU instruction
             do { NesClock(cpu->bus); } while (!CpuComplete());
             // CPU clock runs slower than system clock, so it may be
@@ -213,7 +213,7 @@ void StartDemo() {
     while (!WindowShouldClose()) {
         UpdateDemo();
         BeginDrawing();
-            ClearBackground(WHITE);
+            ClearBackground(DARKBLUE);
             DrawCpu(516, 2);
             DrawCode(516, 72, 26);
 
@@ -225,7 +225,7 @@ void StartDemo() {
                         nSwatchSize, nSwatchSize, GetColourFromPaletteRam(p, s));
 		
             // Draw selection reticule around selected palette
-            DrawRectangleLines(516 + selectedPalette * (nSwatchSize * 5) - 1, 339, (nSwatchSize * 4), nSwatchSize, WHITE);
+            DrawRectangleLines(516 + selectedPalette * (nSwatchSize * 5) - 1, 339, (nSwatchSize * 4) + 2, nSwatchSize + 2, WHITE);
             
             DrawSprite(GetPatternTable(0, selectedPalette), 516, 348, 1);
             DrawSprite(GetPatternTable(1, selectedPalette), 648, 348, 1);
