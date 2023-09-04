@@ -18,6 +18,10 @@ u8 BusRead(Bus *bus, u16 addr) {
     else if (addr >= 0x2000 && addr <= 0x3FFF) {
         return CpuReadFromPpu(addr, false);
     }
+    else if (addr >= 0x4016 && addr <= 0x4017) {
+        data = (bus->controllerState[addr & 0x0001] & 0x80) > 0;
+        bus->controllerState[addr & 0x0001] <<= 1;
+    }
     return data;
 }
 
@@ -30,6 +34,9 @@ void BusWrite(Bus *bus, u16 addr, u8 data) {
     }
     else if (addr >= 0x2000 && addr <= 0x3FFF) {
         CpuWriteToPpu(addr, data);
+    }
+    else if (addr >= 0x4016 && addr <= 0x4017) {
+        bus->controllerState[addr & 0x0001] = bus->controller[addr & 0x0001];
     }
 }
 

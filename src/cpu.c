@@ -828,8 +828,8 @@ u8 ROL() {
 u8 ROR() {
     CpuFetch();
 	cpu.temp = (u16)(CpuGetFlag(C) << 7) | (cpu.fetched >> C);
-	CpuSetFlag(C, cpu.temp & 0x01);
-	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x0000);
+	CpuSetFlag(C, cpu.fetched & 0x01);
+	CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0x00);
 	CpuSetFlag(N, cpu.temp & 0x0080);
     // This op has different Address mode
 	if (LOOKUP[cpu.opcode].addrmode == IMP)
@@ -859,12 +859,12 @@ u8 RTS() {
 
 u8 SBC() {
     CpuFetch();
-    u16 inverted = (u16)(cpu.fetched ^ 0x00FF); 
+    u16 inverted = ((u16)(cpu.fetched)) ^ 0x00FF; 
     cpu.temp = (u16)cpu.A + inverted + (u16)CpuGetFlag(C);
-    CpuSetFlag(C, cpu.temp && 0xFF00);
+    CpuSetFlag(C, cpu.temp & 0xFF00);
     CpuSetFlag(Z, (cpu.temp & 0x00FF) == 0);
     CpuSetFlag(V, (cpu.temp ^ (u16)cpu.A) & (cpu.temp ^ inverted) & 0x0080);
-    CpuSetFlag(N, cpu.temp & 0x80);
+    CpuSetFlag(N, cpu.temp & 0x0080);
     cpu.A = cpu.temp & 0x00FF;
     return 1;
 }

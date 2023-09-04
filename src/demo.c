@@ -166,6 +166,15 @@ void SetupDemo() {
 }
 
 void UpdateDemo() {
+    cpu->bus->controller[0] = 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_X) ? 0x80 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_Z) ? 0x40 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_A) ? 0x20 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_S) ? 0x10 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_UP) ? 0x08 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_DOWN) ? 0x04 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_LEFT) ? 0x02 : 0x00;
+    cpu->bus->controller[0] |= IsKeyDown(KEY_RIGHT) ? 0x00 : 0x00;
     float elapsedTime = GetFrameTime();
     if (emulationRun) {
         if (residualTime > 0.0f)

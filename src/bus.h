@@ -10,6 +10,8 @@ typedef struct {
     Ppu2C02 *ppu;
     Memory *memory;
     Cartridge *cartridge;
+    u8 controllerState[2];
+    u8 controller[2];
 } Bus;
 
 void BusInit(Bus *bus);
