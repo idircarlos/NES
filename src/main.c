@@ -14,6 +14,5 @@ int main(void) {
     PpuInit();
     CpuConnectBus(&bus);
     StartDemo();
-    Cartridge * cart = CartridgeCreate("cpu_dummy_reads.nes");
     return 0;
 }
