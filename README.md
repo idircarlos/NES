@@ -1,7 +1,7 @@
 # NES Emulator in C
 
 This is a project for a NES emulator written in pure C. The main goal of this project is to emulate a Nintendo Entertainment System (NES) to run most of the classic games.
-This repo tries to port the original NES Emulator written by OneLoneCoder (javidx9) written in C++ into a pure C Emulator. Check the *Acknowledgments* section.
+This repo tries to port the original [NES Emulator](https://github.com/OneLoneCoder/olcNES) written by OneLoneCoder (javidx9) written in C++ into a pure C Emulator. Check the *Acknowledgments* section.
 
 ## Project Status
 
