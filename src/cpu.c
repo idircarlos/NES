@@ -86,8 +86,8 @@ void CpuWrite(u16 addr, u8 data) {
     BusWrite(cpu.bus, addr, data);
 }
 
-CpuStatusFlag CpuGetFlag(CpuStatusFlag flag) {
-    return cpu.status & flag;
+u8 CpuGetFlag(CpuStatusFlag flag) {
+    return ((cpu.status & flag) > 0) ? 1 : 0;
 }
 
 void CpuSetFlag(CpuStatusFlag flag, bool one) {

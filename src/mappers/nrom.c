@@ -38,12 +38,12 @@ bool MapperPpuRead(Mapper *mapper, u16 addr, u32* mappedAddr) {
 }
 
 bool MapperPpuWrite(Mapper *mapper, u16 addr, u32* mappedAddr) {
-    if (addr >= 0x0000 && addr <= 0x1FFF) {
-        if (mapper->CHRbanks == 0) {
-            // Treat as RAM
-            *mappedAddr = addr;
-            return true;
-        }
-    }
+    // if (addr >= 0x0000 && addr <= 0x1FFF) {
+    //     if (mapper->CHRbanks == 0) {
+    //         // Treat as RAM
+    //         *mappedAddr = addr;
+    //         return true;
+    //     }
+    // }
     return false;
 }

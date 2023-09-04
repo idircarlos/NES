@@ -11,6 +11,11 @@ typedef struct {
     usize capacity;
 } Vector;
 
+typedef enum {
+    HORIZONTAL = 0,
+    VERTICAL
+} Mirror;
+
 typedef struct {
     Vector *PRGMemory;
     Vector *CHRMemory;
@@ -18,6 +23,7 @@ typedef struct {
     u8 nPRGBanks;
     u8 nCHRBanks;
     Mapper *mapper;
+    Mirror mirror;
 } Cartridge;
 
 Cartridge *CartridgeCreate(const char *romPath);

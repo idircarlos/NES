@@ -52,6 +52,7 @@ Cartridge *CartridgeCreate(const char *romPath) {
     cartridge->nPRGBanks = header.PRG_chunks;
     cartridge->nCHRBanks = header.CHR_chunks;
     cartridge->mapperID = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
+    cartridge->mirror = (header.mapper1 & 0x01) ? VERTICAL : HORIZONTAL;
 
     u8 fileType = 1;
     // By the moment we only consider file type 1

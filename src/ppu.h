@@ -59,6 +59,18 @@ typedef struct {
     PpuMask mask;
 } PpuRegisters;
 
+typedef union {
+    struct {
+        u16 coarseX : 5;
+        u16 coarseY : 5;
+        u16 nametableX : 1;
+        u16 nametableY : 1;
+        u16 fineY : 3;
+        u16 unused : 1;
+    } bits;
+    u16 reg;
+} LoopyRegister;
+
 typedef struct {
     Cartridge *cartridge;
     u8 nameTable[2][1024];
@@ -68,14 +80,23 @@ typedef struct {
     Sprite *spriteScreen;
     Sprite *spriteNameTable[2];
     Sprite *spritePatternTable[2];
-    u16 scanline;
-    u16 cycle;
+    i16 scanline;
+    i16 cycle;
     bool frameCompleted;
     PpuRegisters registers;
-    // Internal communications
+    LoopyRegister vramAddr;
+    LoopyRegister tramAddr;
     u8 addressLatch;
     u8 ppuDataBuffer;
-    u16 ppuAddr;
+    u8 fineX;
+    u8 bgNextTileId;
+    u8 bgNextTileAttr;
+    u8 bgNextTileLsb;
+    u8 bgNextTileMsb;
+    u16 bgShifterPatternLo;
+    u16 bgShifterPatternHi;
+    u16 bgShifterAttribLo;
+    u16 bgShifterAttribHi;
     bool nmi;
 } Ppu2C02;
 

@@ -128,7 +128,7 @@ void DrawCode(int x, int y, int nLines) {
     }
 }
 
-void DrawSprite(Sprite *sprite, u16 x, u16 y, u32 scale) {
+void DrawSprite(Sprite *sprite, u16 x, u16 y, i32 scale) {
     if (sprite == NULL) return;
 
     i32 fxs = 0, fxm = 1, fx = 0;
@@ -157,7 +157,7 @@ void DrawSprite(Sprite *sprite, u16 x, u16 y, u32 scale) {
 void SetupDemo() {
     cpu = CpuGet();
     ppu = PpuGet();
-    Cartridge *cartridge = CartridgeCreate("./dk.nes");
+    Cartridge *cartridge = CartridgeCreate("./nestest.nes");
     NesInsertCartridge(cpu->bus, cartridge);
     // Extract dissassembly
     CpuDisassemble(0x0000, 0xFFFF, mapAsm);
@@ -229,6 +229,8 @@ void StartDemo() {
             
             DrawSprite(GetPatternTable(0, selectedPalette), 516, 348, 1);
             DrawSprite(GetPatternTable(1, selectedPalette), 648, 348, 1);
+
+
         EndDrawing();
     }
 }
