@@ -1,6 +1,7 @@
 # NES Emulator in C
 
 This is a project for a NES emulator written in pure C. The main goal of this project is to emulate a Nintendo Entertainment System (NES) to run most of the classic games.
+This repo tries to port the original NES Emulator written by OneLoneCoder (javidx9) written in C++ into a pure C Emulator. Check the *Acknowledgments* section.
 
 ## Project Status
 
@@ -34,3 +35,11 @@ Raylib is the only dependency for the graphics, sound and input. Also, the statu
 ```shell
 $ make && ./nes
 ```
+
+## Acknowledgments
+
+I would like to extend my heartfelt gratitude to the following individuals and resources:
+
+- [Nesdev Wiki](https://www.nesdev.org/wiki/Nesdev_Wiki): A valuable source of NES programming information and documentation that has been instrumental in the development of this emulator.
+
+- [OneLoneCoder (javidx9)](https://onelonecoder.com/): Inspirational tutorials and content that have helped me learn and improve my programming skills on C/C++.
